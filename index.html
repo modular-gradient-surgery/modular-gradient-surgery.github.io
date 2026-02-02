@@ -7,240 +7,759 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
         .gradient-text {
             background: linear-gradient(90deg, #2563eb, #7c3aed);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        .figure-placeholder {
-            background-color: #f3f4f6;
-            border: 2px dashed #d1d5db;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .figure-card {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        /* Style for the actual images */
+        .figure-img {
+            width: 100%;
+            height: auto;
             border-radius: 0.75rem;
-            min-height: 300px;
-            margin: 1.5rem 0;
-            flex-direction: column;
-            color: #6b7280;
+            margin-bottom: 1rem;
+            border: 1px solid #f1f5f9;
         }
         .ai-sidebar {
             position: fixed;
-            right: -350px;
+            right: -380px;
             top: 0;
-            width: 350px;
+            width: 380px;
             height: 100vh;
             background: white;
-            box-shadow: -4px 0 15px rgba(0,0,0,0.1);
-            transition: right 0.3s ease-in-out;
-            z-index: 50;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.1);
+            transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
             display: flex;
             flex-direction: column;
         }
         .ai-sidebar.open { right: 0; }
-        .chat-bubble { max-width: 80%; padding: 8px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 0.875rem; }
-        .chat-user { background: #eff6ff; color: #1e40af; align-self: flex-end; }
-        .chat-ai { background: #f3f4f6; color: #1f2937; align-self: flex-start; }
+        .chat-bubble { max-width: 85%; padding: 10px 14px; border-radius: 1rem; margin-bottom: 10px; font-size: 0.875rem; line-height: 1.4; }
+        .chat-user { background: #2563eb; color: white; align-self: flex-end; border-bottom-right-radius: 0.25rem; }
+        .chat-ai { background: #f3f4f6; color: #1f2937; align-self: flex-start; border-bottom-left-radius: 0.25rem; border: 1px solid #e5e7eb; }
+        
+        /* Table Styling */
+        .results-table th, .results-table td {
+            padding: 0.5rem 0.4rem;
+            text-align: center;
+            font-size: 0.75rem;
+        }
+        .results-table thead tr:first-child th {
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .results-table .row-group-label {
+            background-color: #f8fafc;
+            font-style: italic;
+            text-align: center;
+            font-weight: 500;
+            color: #64748b;
+        }
+        .results-table .header-bg {
+            background-color: #f1f5f9;
+        }
     </style>
 </head>
-<body class="bg-white text-gray-900">
+<body class="bg-slate-50 text-gray-900 selection:bg-blue-100 selection:text-blue-900">
 
     <!-- Gemini AI Assistant Toggle -->
-    <button onclick="toggleSidebar()" class="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-2xl hover:bg-blue-700 transition-all z-[60] flex items-center gap-2 group">
+    <button onclick="toggleSidebar()" class="fixed bottom-8 right-8 bg-blue-600 text-white p-4 rounded-full shadow-2xl hover:bg-blue-700 transition-all z-[110] flex items-center gap-3 group scale-110">
         <i data-lucide="sparkles"></i>
-        <span class="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 whitespace-nowrap">✨ Ask Gemini about MGS</span>
+        <span class="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 whitespace-nowrap font-medium">✨ Ask Researcher</span>
     </button>
 
     <!-- AI Sidebar -->
     <div id="aiSidebar" class="ai-sidebar border-l">
-        <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
-            <h3 class="font-bold flex items-center gap-2">
-                <i data-lucide="sparkles" class="text-blue-600"></i> Research Assistant
+        <div class="p-5 border-b bg-white flex justify-between items-center">
+            <h3 class="font-bold text-lg flex items-center gap-2">
+                <i data-lucide="brain-circuit" class="text-blue-600"></i> MGS Assistant
             </h3>
-            <button onclick="toggleSidebar()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x"></i></button>
+            <button onclick="toggleSidebar()" class="text-gray-400 hover:text-gray-600 bg-gray-100 p-1 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
         
-        <div class="flex-1 overflow-y-auto p-4 space-y-6">
-            <!-- Summary Tool -->
-            <div class="space-y-2">
-                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Quick Insight</p>
-                <button onclick="generateSummary()" class="w-full py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition border border-blue-100 flex items-center justify-center gap-2">
-                    <i data-lucide="zap" class="w-4 h-4"></i> ✨ Summarize Method
-                </button>
-                <div id="summaryResult" class="text-sm text-gray-600 hidden bg-slate-50 p-3 rounded-lg border italic"></div>
+        <div class="flex-1 overflow-y-auto p-5 space-y-6 bg-slate-50/30">
+            <div>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Quick Summaries</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="askQuestion('Summarize MGS in 2 sentences')" class="text-[11px] py-2 px-1 bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition shadow-sm">What is MGS?</button>
+                    <button onclick="askQuestion('What are the issues with Sequential RL?')" class="text-[11px] py-2 px-1 bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition shadow-sm">Sequential RL Issues</button>
+                </div>
             </div>
 
-            <hr class="border-gray-100">
-
-            <!-- Chat Interface -->
-            <div class="space-y-2 flex flex-col h-[400px]">
-                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Ask a Question</p>
-                <div id="chatMessages" class="flex-1 overflow-y-auto flex flex-col space-y-2 border rounded-lg p-2 bg-slate-50/50">
-                    <div class="chat-bubble chat-ai">Hi! I can answer questions about the Modular Gradient Surgery paper. Ask me about Sequential RL vs Mixed RL or the MGS algorithm!</div>
+            <div class="flex flex-col h-[500px] border rounded-2xl bg-white shadow-inner overflow-hidden">
+                <div id="chatMessages" class="flex-1 overflow-y-auto p-4 flex flex-col space-y-2">
+                    <div class="chat-bubble chat-ai">Hello! I'm the research assistant for the MGS paper. You can ask me about <b>Reasoning Rigidity</b>, <b>Gradient Conflicts</b>, or how we resolved them at the module level.</div>
                 </div>
-                <div class="flex gap-2">
-                    <input id="chatInput" type="text" placeholder="e.g. What is Reasoning Rigidity?" class="flex-1 text-sm border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                    <button onclick="askQuestion()" class="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition">
-                        <i data-lucide="send" class="w-4 h-4"></i>
+                <div class="p-3 border-t bg-gray-50 flex gap-2">
+                    <input id="chatInput" type="text" placeholder="Type your question..." class="flex-1 text-sm border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
+                    <button onclick="askQuestion()" class="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 transition shadow-md">
+                        <i data-lucide="arrow-up" class="w-5 h-5"></i>
                     </button>
                 </div>
             </div>
         </div>
-        <div class="p-4 bg-slate-50 text-[10px] text-gray-400 text-center">
+        <div class="p-4 bg-white border-t text-[10px] text-gray-400 text-center font-medium">
             Powered by Gemini 2.5 Flash
         </div>
     </div>
 
-    <!-- Hero Section -->
-    <header class="py-20 px-4 text-center bg-slate-50 border-b">
+    <!-- Header -->
+    <header class="py-24 px-6 text-center bg-white border-b border-gray-100">
         <div class="max-w-5xl mx-auto">
             <h1 class="text-4xl md:text-5xl font-bold mb-6 leading-tight">
                 Advancing General-Purpose Reasoning Models with <br>
                 <span class="gradient-text">Modular Gradient Surgery</span>
             </h1>
             
-            <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-lg mb-8 font-medium text-blue-700">
-                <span>Min Cai<sup>1,2*</sup></span>
+            <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-lg mb-8 font-medium text-gray-700">
+                <span><a href="https://henrycai11.github.io" class="text-indigo-600 hover:text-indigo-800 underline decoration-indigo-200 underline-offset-4">Min Cai</a><sup>1,2*</sup></span>
                 <span>Yu Liang<sup>1</sup></span>
-                <span>Longzheng Wang<sup>1</sup></span>
+                <span><a href="https://scholar.google.com/citations?user=1_f2DScAAAAJ&hl=en" class="text-indigo-600 hover:text-indigo-800 underline decoration-indigo-200 underline-offset-4">Longzheng Wang</a><sup>1</sup></span>
                 <span>Yan Wang<sup>1</sup></span>
                 <span>Yueyang Zhang<sup>1</sup></span>
-                <span>Long Xia<sup>1</sup></span>
+                <span><a href="https://scholar.google.com/citations?user=NRwerBAAAAAJ&hl=en" class="text-indigo-600 hover:text-indigo-800 underline decoration-indigo-200 underline-offset-4">Long Xia</a><sup>1</sup></span>
                 <span>Zhiyuan Sun<sup>1</sup></span>
-                <span>Xi Ye<sup>2†</sup></span>
+                <span><a href="https://xiye17.github.io" class="text-indigo-600 hover:text-indigo-800 underline decoration-indigo-200 underline-offset-4">Xi Ye</a><sup>2†</sup></span>
                 <span>Daiting Shi<sup>1</sup></span>
             </div>
 
-            <div class="flex flex-wrap justify-center gap-8 mb-10 text-gray-600">
+            <div class="flex flex-wrap justify-center gap-8 mb-4 text-gray-600">
                 <div class="flex items-center gap-2 font-semibold">
                     <span class="text-slate-400">1</span> Baidu Inc.
                 </div>
                 <div class="flex items-center gap-2 font-semibold">
                     <span class="text-slate-400">2</span> University of Alberta
                 </div>
+                <div class="flex items-center gap-2 font-semibold">
+                    <span class="text-slate-400">†</span> Core contributor
+                </div>
             </div>
 
-            <div class="flex justify-center gap-4">
-                <a href="#" class="flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-full font-semibold hover:bg-slate-800 transition shadow-lg">
-                    <i data-lucide="file-text"></i> Paper (PDF)
+            <div class="text-xs text-gray-400 italic mb-10">
+                * Work done during CM's internship at Baidu
+            </div>
+
+            <div class="flex justify-center gap-5">
+                <a href="#" class="flex items-center gap-3 bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-xl hover:-translate-y-1">
+                    <i data-lucide="file-text" class="w-5 h-5"></i> Paper
                 </a>
-                <a href="https://xxx.github.io" class="flex items-center gap-2 bg-white border border-slate-300 text-slate-700 px-6 py-3 rounded-full font-semibold hover:bg-slate-50 transition shadow-md">
-                    <i data-lucide="github"></i> Code
+                <a href="https://github.com/StringNLPLAB/MGS" class="flex items-center gap-3 bg-white border-2 border-slate-200 text-slate-800 px-8 py-4 rounded-2xl font-bold hover:border-slate-300 transition-all shadow-md hover:-translate-y-1">
+                    <i data-lucide="github" class="w-5 h-5"></i> Code
                 </a>
             </div>
         </div>
     </header>
 
-    <main class="max-w-4xl mx-auto px-6 py-16">
+    <main class="max-w-5xl mx-auto px-6 py-16 space-y-32">
         
-        <!-- Abstract -->
-        <section id="abstract" class="mb-20">
-            <h2 class="text-2xl font-bold mb-6 border-b pb-2">Abstract</h2>
-            <p class="text-lg leading-relaxed text-gray-700">
-                Reinforcement learning (RL) has emerged as a powerful tool for strengthening large language model (LLM) reasoning in various domains. However, combining heterogeneity for training a <strong>general-purpose reasoning model</strong> remains challenging. We evaluate two common approaches, Sequential RL and Mixed RL, across math reasoning, open-ended chat, and instruction following. We find that both suffer from <strong>cross-domain interference</strong> that degrades overall performance. To address this, we introduce <strong>Modular Gradient Surgery (MGS)</strong>, a method that detects and resolves conflicting gradients at a modular level within the transformer. Applied to Llama and Qwen models, MGS achieves <strong>4.3 and 4.5 point average improvements</strong> over multi-task RL, substantially expanding model capability.
-            </p>
+        <!-- Abstract & Teaser -->
+        <section id="abstract">
+            <div class="grid md:grid-cols-5 gap-12 items-start">
+                <div class="md:col-span-2 space-y-6">
+                    <h2 class="text-3xl font-bold text-slate-900 flex items-center gap-3">
+                        <i data-lucide="scroll-text" class="text-blue-600"></i> Abstract
+                    </h2>
+                    <p class="text-lg leading-relaxed text-slate-600 italic">
+                        "Training a single general-purpose LRM across diverse domains remains challenging due to pronounced domain heterogeneity. We introduce Modular Gradient Surgery (MGS), which resolves gradient conflicts at the module level within the transformer."
+                    </p>
+                    <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100">
+                        <div class="text-2xl font-black text-blue-700 mb-1">+4.5 pts</div>
+                        <p class="text-sm font-bold text-blue-900 uppercase tracking-tight">Avg. Improvement over standard Multi-task RL</p>
+                    </div>
+                </div>
+                <div class="md:col-span-3 figure-card">
+                    <!-- IMAGE REPLACED: Replace 'teaser.png' with your file -->
+                    <img src="assets/result_comparison.svg" alt="MGS Performance Frontier" class="figure-img" onerror="this.src='https://placehold.co/800x450?text=Figure+1:+Performance+Frontier'">
+                    <p class="text-xs text-slate-500 text-center leading-relaxed">
+                        <b>Effectiveness Comparison:</b> MGS achieves stronger and more balanced performance than Sequential RL, Naïve Mixing, and Global Gradient Surgery.
+                    </p>
+                </div>
+            </div>
         </section>
 
-        <!-- Figure 1: Effectiveness -->
-        <div class="figure-placeholder">
-            <i data-lucide="image" class="w-12 h-12 mb-2"></i>
-            <p class="font-bold">Figure 1: Effectiveness Comparison</p>
-            <p class="text-sm px-10 text-center">Comparison of Sequential RL, Mixed RL, and Modular Gradient Surgery (MGS). MGS achieves the best multi-domain performance frontier.</p>
+<section id="sequential-rl" class="space-y-10">
+    <div class="text-center max-w-3xl mx-auto">
+        <h2 class="text-3xl font-bold mb-4 text-slate-900">Strategy Analysis 1: Sequential RL</h2>
+        <p class="text-slate-600">Training domains sequentially triggers <b>Mode Interference</b>, creating a performance ceiling through two primary failure modes.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-8 items-stretch">
+        <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col h-full">
+            <div class="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner shrink-0">
+                <img src="assets/rigidity_forgetting_v2.svg" alt="Analysis Plot" class="w-full">
+            </div>
+
+            <div class="flex-grow flex flex-col justify-center">
+                <div class="space-y-3 p-6 rounded-2xl bg-slate-50 border border-slate-200 shadow-sm">
+                    <div class="flex items-start gap-4 pb-4 border-b border-slate-200">
+                        <div class="mt-1 bg-red-100 p-2 rounded-lg text-red-600"><i data-lucide="history" class="w-5 h-5"></i></div>
+                        <div>
+                            <h4 class="font-bold text-slate-900 leading-none mb-1 text-sm uppercase tracking-wider">Forgetting</h4>
+                            <p class="text-sm text-slate-600 leading-snug"><b>Math-after-Chat</b> triggers an asymmetric <span class="text-red-600 font-mono font-bold">-7.0</span> drop in conversational capability.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start gap-4 pt-1">
+                        <div class="mt-1 bg-amber-100 p-2 rounded-lg text-amber-600"><i data-lucide="shield-alert" class="w-5 h-5"></i></div>
+                        <div>
+                            <h4 class="font-bold text-slate-900 leading-none mb-1 text-sm uppercase tracking-wider">Rigidity</h4>
+                            <p class="text-sm text-slate-600 leading-snug">Low-entropy Math updates "lock" exploratory behavior, creating a <span class="text-amber-600 font-mono font-bold">-9.6</span> gap.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Problem Section -->
-        <section id="problem" class="mb-20">
-            <h2 class="text-2xl font-bold mb-6 border-b pb-2">The Challenge: Mode Interference</h2>
-            <p class="mb-6 text-gray-700">
-                When training models on diverse domains (e.g., rigid math rewards vs. flexible chat rewards), standard techniques fail in two specific ways:
-            </p>
-            <div class="grid md:grid-cols-2 gap-8">
-                <div class="p-6 bg-red-50 rounded-xl border border-red-100">
-                    <h3 class="font-bold text-red-800 mb-2 flex items-center gap-2">
-                        <i data-lucide="unplug"></i> Forgetting
-                    </h3>
-                    <p class="text-sm text-red-900">Performance degradation on previously trained domains during Sequential RL. Optimizing for Math often erases Chat capabilities.</p>
-                </div>
-                <div class="p-6 bg-orange-50 rounded-xl border border-orange-100">
-                    <h3 class="font-bold text-orange-800 mb-2 flex items-center gap-2">
-                        <i data-lucide="lock"></i> Reasoning Rigidity
-                    </h3>
-                    <p class="text-sm text-orange-900">Training on one domain can constrain performance gains on subsequent ones. Math training often leads to a "rigid" model that struggles to explore in Chat.</p>
-                </div>
+        <div class="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-2xl flex flex-col h-full overflow-hidden">
+            <div class="flex-grow flex items-center justify-center bg-slate-800/50 rounded-2xl p-4 border border-slate-700/50">
+                <img src="assets/entropy_analysis_vertical.svg" alt="Entropy Analysis" class="max-h-[400px] w-auto brightness-110" onerror="this.src='https://placehold.co/600x400/0f172a/94a3b8?text=Sequential+Analysis'">
             </div>
-        </section>
+            <div class="mt-6 pt-6 border-t border-slate-800 shrink-0">
+                <h4 class="font-bold text-white mb-2">Entropy & Capability Trade-off</h4>
+                <p class="text-sm text-slate-400 leading-relaxed">Sequential trajectories fail to reach expert performance levels due to early exploratory collapse (Math) or subsequent capability erasure (Chat).</p>
+            </div>
+        </div>
+    </div>
+</section>
 
-        <!-- Methodology Section -->
-        <section id="method" class="mb-20 bg-slate-900 text-white p-10 rounded-3xl">
-            <h2 class="text-2xl font-bold mb-6 border-b border-slate-700 pb-2">Modular Gradient Surgery (MGS)</h2>
-            <p class="mb-8 text-slate-300 leading-relaxed">
-                MGS identifies that gradient conflicts are not uniform. Instead of projecting gradients globally, we resolve interference at the <strong>module level</strong> (MLP, Attention blocks). This allows the model to preserve compatible updates while selectively mitigating destructive interference.
-            </p>
+<section id="mixed-rl" class="space-y-12">
+    <div class="text-center max-w-3xl mx-auto">
+        <h2 class="text-3xl font-bold mb-4 text-slate-900">Strategy Analysis 2: Mixed RL</h2>
+        <p class="text-slate-600">Mixing data in batches causes interference at the <b>Gradient Level</b>, where updates for one task directly harm the other.</p>
+    </div>
+
+    <div class="grid md:grid-cols-5 gap-10 items-stretch">
+        <div class="md:col-span-2 bg-slate-900 rounded-[2.5rem] p-8 shadow-2xl flex flex-col h-full border border-slate-800">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></div>
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Conflict Monitor</span>
+                </div>
+                <span class="text-[10px] font-mono text-slate-500">Log Scale Analysis</span>
+            </div>
             
-            <div class="figure-placeholder bg-slate-800 border-slate-700 text-slate-400">
-                <i data-lucide="layers" class="w-12 h-12 mb-2"></i>
-                <p class="font-bold text-slate-200">Figure 2: MGS Architecture</p>
-                <p class="text-sm px-10 text-center">Visualizing conflicting task gradients being projected and aggregated independently within MLP and Attention modules.</p>
+            <div class="flex-grow flex items-center justify-center">
+                <img src="assets/stacked_ratio_cos_vertical_log.svg" alt="Gradient Cosine Similarity" class="w-full h-auto" onerror="this.src='https://placehold.co/800x400?text=Gradient+Conflicts'">
+            </div>
+            
+            <div class="mt-8 pt-6 border-t border-slate-800">
+                <p class="text-sm font-medium text-white mb-2">Negative Cosine Similarity Detected</p>
+                <p class="text-xs text-slate-400 leading-relaxed italic">
+                    Math updates frequently exhibit negative alignment with Chat updates, creating optimization friction that persists throughout the training trajectory.
+                </p>
+            </div>
+        </div>
+        
+        <div class="md:col-span-3 flex flex-col h-full">
+            <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm flex flex-col h-full justify-between">
+                <div>
+                    <div class="mb-8 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <img src="assets/pareto_frontier_normal_mixing_fixed.svg" alt="Pareto Frontier Analysis" class="w-full h-auto" onerror="this.src='https://placehold.co/400x200?text=Pareto+Frontier'">
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="inline-block px-3 py-1 bg-amber-50 text-amber-700 text-[10px] font-black uppercase tracking-widest rounded-full border border-amber-100">
+                            Key Insight
+                        </div>
+                        <h3 class="text-2xl font-extrabold text-slate-900 leading-tight">The Mixing Paradox</h3>
+                        <p class="text-slate-600 text-sm leading-relaxed">
+                            Empirical results show that even with a highly skewed mixture (90% Math, 10% Chat), the model consistently lags behind a specialized Math-only expert. 
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-8 p-5 bg-slate-900 rounded-2xl">
+                    <p class="text-xs text-slate-300 leading-snug">
+                        <span class="text-indigo-400 font-bold text-xs uppercase block mb-1">Conclusion</span>
+                        Simply adjusting data proportions is insufficient to eliminate cross-domain interference—the conflict is fundamental to the <b>shared gradient space</b>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<div class="mt-4 mb-2 p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
+    <p class="text-xs text-slate-600 leading-snug">
+        <span class="text-indigo-600 font-bold text-[10px] uppercase block mb-1 tracking-tight">
+            <i data-lucide="lock" class="inline w-3 h-3 mr-1"></i> Global Constraints
+        </span>
+        Standard "Global" surgery (PCGrad) is often <b>overly conservative</b>. By treating the model as a monolithic block, projecting the entire gradient based on a conflict in a single module stalls learning across the whole system.
+    </p>
+</div>
+</section>
+
+        <!-- Solution: MGS -->
+        <section id="methodology" class="bg-indigo-600 rounded-[3rem] p-12 text-white relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-white/10 to-transparent pointer-events-none"></div>
+            
+            <div class="relative z-10 grid md:grid-cols-2 gap-12 items-center">
+                <div class="space-y-8">
+                    <div class="inline-block px-3 py-1 bg-white/20 rounded-full text-xs font-bold tracking-widest uppercase">The Solution</div>
+                    <h2 class="text-4xl md:text-5xl font-black leading-tight">Modular <br>Gradient Surgery</h2>
+                    <p class="text-indigo-100 text-lg leading-relaxed">
+                        Instead of treating the model as a monolithic block, MGS partitions parameters into <b>functional modules</b> (MLPs, Attention) and applies Gradient Surgery (PCGrad) independently.
+                    </p>
+                    <ul class="space-y-4">
+                        <li class="flex items-center gap-3">
+                            <i data-lucide="check-circle" class="text-indigo-300"></i>
+                            <span><b>Local Resolution:</b> Prevents one module's conflict from stalling the whole model.</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i data-lucide="check-circle" class="text-indigo-300"></i>
+                            <span><b>Functional Specialization:</b> Preserves domain-specific knowledge in MLPs.</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i data-lucide="check-circle" class="text-indigo-300"></i>
+                            <span><b>FSDP Compatible:</b> Overhead is negligible (~0.1% training time).</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="bg-slate-900 rounded-3xl p-6 shadow-2xl font-mono text-[11px] border border-white/10">
+                    <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-2">
+                        <span class="text-slate-500 uppercase font-bold tracking-tighter">mgs_algorithm.py</span>
+                        <div class="flex gap-1.5">
+                            <div class="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+                            <div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div>
+                            <div class="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <p><span class="text-purple-400">def</span> <span class="text-blue-400">apply_mgs</span>(gradients, modules):</p>
+                        <p>&nbsp;&nbsp;<span class="text-purple-400">for</span> task_a, task_b <span class="text-purple-400">in</span> permutations(tasks, 2):</p>
+                        <p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-slate-500"># Iterate per module</span></p>
+                        <p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-purple-400">for</span> mod <span class="text-purple-400">in</span> modules:</p>
+                        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;g_a = gradients[task_a][mod]</p>
+                        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;g_b = gradients[task_b][mod]</p>
+                        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-purple-400">if</span> dot(g_a, g_b) < 0:</p>
+                        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;project(g_a, onto=g_b_orthogonal_plane)</p>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <!-- Results Section -->
-        <section id="results" class="mb-20">
-            <h2 class="text-2xl font-bold mb-6 border-b pb-2">Key Results</h2>
-            <ul class="space-y-4 text-gray-700 mb-10">
-                <li class="flex items-start gap-3">
-                    <i data-lucide="check-circle" class="text-green-500 mt-1 flex-shrink-0"></i>
-                    <span><strong>State-of-the-Art Performance:</strong> MGS consistently achieves the highest average score across Math, Chat, and IF benchmarks.</span>
-                </li>
-                <li class="flex items-start gap-3">
-                    <i data-lucide="check-circle" class="text-green-500 mt-1 flex-shrink-0"></i>
-                    <span><strong>Balanced Capabilities:</strong> Unlike sequential training, MGS prevents "catastrophic forgetting" and maintains strong performance in all domains simultaneously.</span>
-                </li>
-                <li class="flex items-start gap-3">
-                    <i data-lucide="check-circle" class="text-green-500 mt-1 flex-shrink-0"></i>
-                    <span><strong>Scalability:</strong> MGS generalizes to prolonged training and more complex task combinations with minimal overhead.</span>
-                </li>
-            </ul>
+        <!-- Detailed Results -->
+        <section id="detailed-results" class="space-y-12">
+            <div class="text-center max-w-3xl mx-auto space-y-4">
+                <h2 class="text-4xl font-black text-slate-900">Main Evaluation Results</h2>
+                <p class="text-slate-500">Comparison of post-training strategies across diverse benchmarks. MGS consistently expands the reasoning frontier.</p>
+            </div>
 
-            <div class="figure-placeholder">
-                <i data-lucide="bar-chart-3" class="w-12 h-12 mb-2"></i>
-                <p class="font-bold text-gray-600">Table: Evaluation Results</p>
-                <p class="text-sm px-10 text-center">Summary table showing Llama-3.1 and Qwen-2.5 performance improvements across MATH500, WildBench, and IFEval.</p>
+            <div class="figure-card overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse results-table">
+                        <thead>
+                            <tr class="bg-white">
+                                <th colspan="2"></th>
+                                <th colspan="4" class="font-bold text-slate-900 border-x">Math (pass@1, avg@4)</th>
+                                <th colspan="4" class="font-bold text-slate-900 border-x">Chat</th>
+                                <th colspan="2" class="font-bold text-slate-900 border-x">Misc.</th>
+                                <th></th>
+                            </tr>
+                            <tr class="header-bg border-y">
+                                <th class="font-bold">Backbone</th>
+                                <th class="font-bold">Method</th>
+                                <th class="font-bold">MATH</th>
+                                <th class="font-bold">GSM</th>
+                                <th class="font-bold">AIME</th>
+                                <th class="font-bold">M. Avg.</th>
+                                <th class="font-bold">WB</th>
+                                <th class="font-bold">AE2</th>
+                                <th class="font-bold">CW3</th>
+                                <th class="font-bold">C. Avg.</th>
+                                <th class="font-bold">IF</th>
+                                <th class="font-bold">Gen.</th>
+                                <th class="font-bold text-blue-600">Total Avg.</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <!-- Prior Works -->
+                            <tr class="row-group-label"><td colspan="13">Prior Works</td></tr>
+                            <tr>
+                                <td>Llama</td>
+                                <td>RLMT</td>
+                                <td>4.9</td>
+                                <td>10.2</td>
+                                <td>0.0</td>
+                                <td>5.0</td>
+                                <td>35.6</td>
+                                <td>15.6</td>
+                                <td>36.3</td>
+                                <td>29.2</td>
+                                <td>20.4</td>
+                                <td>21.5</td>
+                                <td>18.9</td>
+                            </tr>
+                            <tr>
+                                <td rowspan="2" class="border-r">Qwen</td>
+                                <td>RLMT</td>
+                                <td>71.8</td>
+                                <td>82.7</td>
+                                <td>10.0</td>
+                                <td>54.8</td>
+                                <td>44.7</td>
+                                <td>57.2</td>
+                                <td>41.7</td>
+                                <td>47.9</td>
+                                <td>25.9</td>
+                                <td>35.4</td>
+                                <td>42.4</td>
+                            </tr>
+                            <tr>
+                                <td>General Reasoner</td>
+                                <td>69.4</td>
+                                <td>81.5</td>
+                                <td>16.7</td>
+                                <td>55.9</td>
+                                <td>13.3</td>
+                                <td>38.8</td>
+                                <td>39.2</td>
+                                <td>30.4</td>
+                                <td>25.1</td>
+                                <td>36.7</td>
+                                <td>38.1</td>
+                            </tr>
+                            <tr>
+                                <td>Qwen-Inst</td>
+                                <td>OpenThinker v3</td>
+                                <td>78.8</td>
+                                <td>87.7</td>
+                                <td>29.2</td>
+                                <td>65.2</td>
+                                <td>-50.2</td>
+                                <td>19.3</td>
+                                <td>29.7</td>
+                                <td>-0.4</td>
+                                <td>24.4</td>
+                                <td>39.1</td>
+                                <td>32.8</td>
+                            </tr>
+
+                            <!-- Multi-task Baselines -->
+                            <tr class="row-group-label"><td colspan="13">Multi-task Baselines</td></tr>
+                            <tr>
+                                <td rowspan="2" class="border-r">Qwen</td>
+                                <td>Normalized Adv.</td>
+                                <td>76.1</td>
+                                <td>91.2</td>
+                                <td>9.2</td>
+                                <td>58.8</td>
+                                <td>43.8</td>
+                                <td>44.8</td>
+                                <td>39.0</td>
+                                <td>42.5</td>
+                                <td>27.3</td>
+                                <td>34.2</td>
+                                <td>41.9</td>
+                            </tr>
+                            <tr>
+                                <td>Model Merging</td>
+                                <td>74.8</td>
+                                <td>90.6</td>
+                                <td>11.7</td>
+                                <td>59.6</td>
+                                <td>33.0</td>
+                                <td>12.4</td>
+                                <td>-24.8</td>
+                                <td>6.9</td>
+                                <td>24.8</td>
+                                <td>32.9</td>
+                                <td>31.4</td>
+                            </tr>
+
+                            <!-- This Work -->
+                            <tr class="row-group-label bg-blue-50/30 text-blue-900 font-bold"><td colspan="13">This Work</td></tr>
+                            <!-- Llama section -->
+                            <tr>
+                                <td rowspan="5" class="border-r font-semibold">Llama</td>
+                                <td>Math &rarr; Chat</td>
+                                <td>24.6</td>
+                                <td>71.6</td>
+                                <td>0.0</td>
+                                <td>32.1</td>
+                                <td><strong>25.7</strong></td>
+                                <td>29.0</td>
+                                <td><strong>38.3</strong></td>
+                                <td class="underline">31.0</td>
+                                <td>21.4</td>
+                                <td>25.0</td>
+                                <td>27.9</td>
+                            </tr>
+                            <tr>
+                                <td>Chat &rarr; Math</td>
+                                <td class="underline">27.6</td>
+                                <td class="underline">78.8</td>
+                                <td><strong>1.7</strong></td>
+                                <td class="underline">36.0</td>
+                                <td>-35.0</td>
+                                <td>6.5</td>
+                                <td>28.3</td>
+                                <td>-0.1</td>
+                                <td>21.3</td>
+                                <td>28.8</td>
+                                <td>21.5</td>
+                            </tr>
+                            <tr>
+                                <td>Naïve Mixing</td>
+                                <td>25.8</td>
+                                <td>76.6</td>
+                                <td>0.0</td>
+                                <td>34.1</td>
+                                <td>15.0</td>
+                                <td>21.5</td>
+                                <td>33.8</td>
+                                <td>23.4</td>
+                                <td>20.7</td>
+                                <td>23.7</td>
+                                <td>25.9</td>
+                            </tr>
+                            <tr>
+                                <td>Global Surgery</td>
+                                <td><strong>29.8</strong></td>
+                                <td><strong>80.4</strong></td>
+                                <td><strong>1.7</strong></td>
+                                <td><strong>37.3</strong></td>
+                                <td>2.3</td>
+                                <td><strong>48.3</strong></td>
+                                <td class="underline">34.9</td>
+                                <td>28.5</td>
+                                <td class="underline">22.9</td>
+                                <td><strong>29.4</strong></td>
+                                <td class="underline">30.1</td>
+                            </tr>
+                            <tr class="bg-blue-50/50">
+                                <td class="font-bold">Modular Surgery</td>
+                                <td>26.0</td>
+                                <td>73.6</td>
+                                <td class="underline">0.8</td>
+                                <td>33.5</td>
+                                <td class="underline">24.7</td>
+                                <td class="underline">39.6</td>
+                                <td>34.1</td>
+                                <td><strong>32.8</strong></td>
+                                <td><strong>23.0</strong></td>
+                                <td class="underline">29.3</td>
+                                <td><strong>30.2</strong></td>
+                            </tr>
+                            <!-- Qwen section -->
+                            <tr>
+                                <td rowspan="5" class="border-r font-semibold">Qwen</td>
+                                <td>Math &rarr; Chat</td>
+                                <td>75.9</td>
+                                <td class="underline">90.8</td>
+                                <td class="underline">13.3</td>
+                                <td class="underline">60.0</td>
+                                <td>35.7</td>
+                                <td>35.4</td>
+                                <td class="underline">43.9</td>
+                                <td>38.3</td>
+                                <td>24.8</td>
+                                <td>30.8</td>
+                                <td>39.7</td>
+                            </tr>
+                            <tr>
+                                <td>Chat &rarr; Math</td>
+                                <td><strong>78.2</strong></td>
+                                <td><strong>92.2</strong></td>
+                                <td>10.8</td>
+                                <td><strong>60.4</strong></td>
+                                <td>36.0</td>
+                                <td>46.8</td>
+                                <td>40.1</td>
+                                <td>41.0</td>
+                                <td>24.4</td>
+                                <td class="underline">36.5</td>
+                                <td>42.0</td>
+                            </tr>
+                            <tr>
+                                <td>Naïve Mixing</td>
+                                <td class="underline">76.0</td>
+                                <td>89.8</td>
+                                <td>10.8</td>
+                                <td>58.9</td>
+                                <td class="underline">47.1</td>
+                                <td>26.2</td>
+                                <td>40.7</td>
+                                <td>38.0</td>
+                                <td>22.1</td>
+                                <td class="underline">36.5</td>
+                                <td>40.4</td>
+                            </tr>
+                            <tr>
+                                <td>Global Surgery</td>
+                                <td>73.0</td>
+                                <td>88.8</td>
+                                <td><strong>14.2</strong></td>
+                                <td>58.7</td>
+                                <td>45.4</td>
+                                <td><strong>62.5</strong></td>
+                                <td>40.2</td>
+                                <td class="underline">49.4</td>
+                                <td class="underline">25.6</td>
+                                <td><strong>36.8</strong></td>
+                                <td class="underline">44.2</td>
+                            </tr>
+                            <tr class="bg-blue-50/50">
+                                <td class="font-bold">Modular Surgery</td>
+                                <td>75.1</td>
+                                <td>90.6</td>
+                                <td><strong>14.2</strong></td>
+                                <td class="underline">60.0</td>
+                                <td><strong>48.3</strong></td>
+                                <td class="underline">59.3</td>
+                                <td><strong>44.2</strong></td>
+                                <td><strong>50.6</strong></td>
+                                <td><strong>28.2</strong></td>
+                                <td>35.3</td>
+                                <td><strong>44.9</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-4 flex flex-wrap gap-4 text-xs text-slate-500 justify-center">
+                    <div class="flex items-center gap-2"><span class="w-3 h-3 bg-blue-50 border border-blue-100 rounded"></span> Modular Surgery (Ours)</div>
+                    <div><strong>Bold</strong>: Highest Score</div>
+                    <div><span class="underline">Underline</span>: Second Best</div>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="flex items-start gap-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                    <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0">
+                        <i data-lucide="trending-up" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="font-bold text-slate-800">SOTA Multi-task Performance</h5>
+                        <p class="text-slate-500 text-sm">MGS consistently achieves the highest <b>Total Average</b> across both Llama and Qwen families, outperforming strong baselines like Global Surgery and Normalized Advantage.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
+                        <i data-lucide="award" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="font-bold text-slate-800">Harmonized Task Balance</h5>
+                        <p class="text-slate-500 text-sm">While sequential methods trade off one domain for another, MGS maintains high performance in <b>Math</b> while reaching state-of-the-art <b>Chat</b> and <b>IF</b> scores.</p>
+                    </div>
+                </div>
             </div>
         </section>
 
+<section id="detailed-results" class="space-y-12">
+    <div class="text-center max-w-3xl mx-auto">
+        <h2 class="text-4xl font-black text-slate-900 tracking-tight">Extended Results</h2>
+        <p class="text-slate-500">MGS expands the capability frontier across multiple backbones and evaluation benchmarks.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-4 items-stretch">
+        
+        <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-center">
+            <div class="flex items-center gap-2 mb-6">
+                <i data-lucide="table" class="text-indigo-600 w-5 h-5"></i>
+                <h4 class="font-bold text-slate-800 uppercase text-xs tracking-widest">Llama-3.1-8B Results on Mixing Three Tasks</h4>
+            </div>
+            <table class="w-full text-[12px] text-left border-collapse">
+                <thead>
+                    <tr class="text-slate-400 border-b border-slate-100">
+                        <th class="py-3 font-bold">Method</th>
+                        <th class="py-3 text-center">Math</th>
+                        <th class="py-3 text-center">Chat</th>
+                        <th class="py-3 text-center">IF</th>
+                        <th class="py-3 text-right text-indigo-600">Total Avg</th>
+                    </tr>
+                </thead>
+                <tbody class="font-mono">
+                    <tr class="border-b border-slate-50">
+                        <td class="py-4 font-sans text-slate-500">Normal Mixing</td>
+                        <td class="py-4 text-center">35.0</td>
+                        <td class="py-4 text-center">22.9</td>
+                        <td class="py-4 text-center">25.4</td>
+                        <td class="py-4 text-right">27.3</td>
+                    </tr>
+                    <tr class="border-b border-slate-50 text-slate-700">
+                        <td class="py-4 font-sans italic underline">Global Surgery</td>
+                        <td class="py-4 text-center">35.8</td>
+                        <td class="py-4 text-center">24.2</td>
+                        <td class="py-4 text-center font-bold text-slate-900">31.1</td>
+                        <td class="py-4 text-right">30.3</td>
+                    </tr>
+                    <tr class="bg-indigo-50/50">
+                        <td class="py-4 pl-2 font-sans font-black text-indigo-700">Mod. Surgery</td>
+                        <td class="py-4 text-center font-bold">36.0</td>
+                        <td class="py-4 text-center font-bold">30.5</td>
+                        <td class="py-4 text-center underline">30.0</td>
+                        <td class="py-4 text-right pr-2 font-black text-indigo-900 text-sm">32.6</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-xl flex flex-col items-center justify-center text-center">
+            <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-6">Compute Trajectory (x → 2x)</span>
+            <img src="assets/trajectory_compute_alpha.svg" alt="Compute Trajectory" class="w-full h-auto max-h-[160px] object-contain" onerror="this.src='https://placehold.co/400x200?text=Trajectory+Alpha'">
+            <p class="mt-4 text-[11px] text-slate-400 italic">MGS prevents capability decay, maintaining a linear growth curve during extended RL.</p>
+        </div>
+
+        
+
+
+    </div>
+</section>
         <!-- BibTeX -->
-        <section id="bibtex" class="bg-slate-50 p-8 rounded-xl border border-slate-200">
-            <h2 class="text-xl font-bold mb-4">Citation</h2>
-            <pre class="text-xs md:text-sm overflow-x-auto text-slate-700 bg-white p-4 rounded border">
+        <section id="bibtex" class="bg-slate-900 p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
+            <div class="absolute inset-0 bg-blue-600 opacity-0 group-hover:opacity-5 transition-opacity duration-700"></div>
+            <h2 class="text-2xl font-black mb-6 text-white flex items-center gap-3">
+                <i data-lucide="quote" class="text-blue-500"></i> Citation
+            </h2>
+            <div class="relative">
+                <pre class="text-xs md:text-sm overflow-x-auto text-slate-300 bg-black/30 p-6 rounded-2xl border border-slate-700 backdrop-blur-sm">
 @article{cai2026mgs,
   title={Advancing General-Purpose Reasoning Models with Modular Gradient Surgery},
   author={Cai, Min and Liang, Yu and Wang, Longzheng and Wang, Yan and Zhang, Yueyang and Xia, Long and Sun, Zhiyuan and Ye, Xi and Shi, Daiting},
-  journal={Preprint},
+  journal={arXiv preprint},
   year={2026}
 }</pre>
+                <button onclick="copyToClipboard()" class="absolute top-4 right-4 text-slate-500 hover:text-white transition">
+                    <i data-lucide="copy" class="w-5 h-5"></i>
+                </button>
+            </div>
         </section>
 
     </main>
 
-    <footer class="py-12 px-4 border-t text-center text-gray-500 text-sm">
-        <p>&copy; 2026 Modular Gradient Surgery Project. Created for ICML 2026.</p>
+    <footer class="py-20 border-t border-slate-200 bg-white">
+        <div class="max-w-5xl mx-auto px-6 text-center space-y-8">
+            <div class="flex justify-center gap-6 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition duration-500">
+                <i data-lucide="graduation-cap" class="w-10 h-10"></i>
+                <i data-lucide="microscope" class="w-10 h-10"></i>
+                <i data-lucide="cpu" class="w-10 h-10"></i>
+            </div>
+            <p class="text-slate-400 text-sm font-medium">© 2026 Modular Gradient Surgery (MGS) Project Team</p>
+        </div>
     </footer>
 
     <script>
         lucide.createIcons();
-        const apiKey = ""; // Set by runtime
+        const apiKey = ""; // Runtime provides the key
 
         const systemPrompt = `You are a helpful research assistant for the paper "Advancing General-Purpose Reasoning Models with Modular Gradient Surgery". 
-        Key concepts:
-        - Mode Interference: Sequential RL results in Forgetting and Rigidity.
-        - Rigidity: Training on Math first reduces exploration in Chat.
-        - Mixed RL: Mixing domains in one batch causes gradient conflicts.
-        - Modular Gradient Surgery (MGS): Resolving conflicts at the module level (Attention/MLP) instead of globally.
-        - Results: 4.3-4.5 average point gain over naive multi-task RL.
-        Respond briefly and professionally based on the paper context.`;
+        CONTEXT:
+        - The paper solves the problem of training general reasoning models (Math + Chat + IF) using RL.
+        - Problem 1: Sequential RL causes "Mode Interference" (Forgetting and Rigidity). Rigidity means a model trained on Math becomes "stiff" and can't explore well in Chat.
+        - Problem 2: Mixed RL (multi-task) causes "Gradient Conflicts" where task updates fight each other.
+        - Solution: Modular Gradient Surgery (MGS). It applies PCGrad to modules (MLP, Attention) independently.
+        - Key results: MGS outperforms Global Surgery and Naive Mixing by ~4.5 points.
+        - Backbone models: Llama-3.1-8B and Qwen-2.5-7B.
+        Respond precisely and concisely. Use bold text for key metrics.`;
 
         function toggleSidebar() {
             document.getElementById('aiSidebar').classList.toggle('open');
@@ -261,7 +780,7 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
-                    if (!response.ok) throw new Error('API request failed');
+                    if (!response.ok) throw new Error('API Error');
                     const data = await response.json();
                     return data.candidates?.[0]?.content?.parts?.[0]?.text;
                 } catch (e) {
@@ -272,23 +791,10 @@
             }
         }
 
-        async function generateSummary() {
-            const resultDiv = document.getElementById('summaryResult');
-            resultDiv.classList.remove('hidden');
-            resultDiv.innerText = "✨ Thinking...";
-            
-            try {
-                const summary = await fetchGemini("Provide a one-paragraph technical summary of the Modular Gradient Surgery (MGS) method and why it outperforms Global Surgery.");
-                resultDiv.innerText = summary;
-            } catch (e) {
-                resultDiv.innerText = "Error fetching summary. Please try again.";
-            }
-        }
-
-        async function askQuestion() {
+        async function askQuestion(predefined = null) {
             const input = document.getElementById('chatInput');
             const chatBox = document.getElementById('chatMessages');
-            const question = input.value.trim();
+            const question = predefined || input.value.trim();
             if (!question) return;
 
             // Add user message
@@ -296,25 +802,34 @@
             userMsg.className = "chat-bubble chat-user";
             userMsg.innerText = question;
             chatBox.appendChild(userMsg);
-            input.value = "";
+            if(!predefined) input.value = "";
 
             // Add AI thinking
             const aiMsg = document.createElement('div');
             aiMsg.className = "chat-bubble chat-ai";
-            aiMsg.innerText = "✨ Thinking...";
+            aiMsg.innerHTML = '<span class="animate-pulse">Analyzing paper contents...</span>';
             chatBox.appendChild(aiMsg);
             chatBox.scrollTop = chatBox.scrollHeight;
 
             try {
-                const answer = await fetchGemini(`Answer this visitor question based on the paper: ${question}`);
-                aiMsg.innerText = answer;
+                const answer = await fetchGemini(question);
+                aiMsg.innerHTML = answer.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
             } catch (e) {
-                aiMsg.innerText = "Sorry, I encountered an error. Please try again later.";
+                aiMsg.innerText = "Error connecting to AI. Please verify key.";
             }
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        // Handle enter key in chat
+        function copyToClipboard() {
+            const bib = document.querySelector('pre').innerText;
+            const el = document.createElement('textarea');
+            el.value = bib;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+        }
+
         document.getElementById('chatInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') askQuestion();
         });
